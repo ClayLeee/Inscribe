@@ -1,4 +1,4 @@
-# react-inscribe
+# Inscribe
 
 An Electron application with React and TypeScript for editing image metadata.
 
