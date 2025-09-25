@@ -1,0 +1,25 @@
+node_modules
+dist
+out
+.DS_Store
+.eslintcache
+*.log*
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE files
+.vscode/settings.json
+.idea/
+
+# OS files
+Thumbs.db
+*.swp
+*.swo
+
+# ExifTool binaries (downloaded in CI)
+resources/exiftool_dist/
