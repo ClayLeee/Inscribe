@@ -75,11 +75,10 @@ export async function writeImageMetadata(
 
     const exiftoolProcess = spawn(exiftoolExecutablePath, exiftoolArgs)
 
-    let stdout = ''
     let stderr = ''
 
-    exiftoolProcess.stdout.on('data', (chunk) => {
-      stdout += chunk.toString()
+    exiftoolProcess.stdout.on('data', () => {
+      // stdout is not used, but we need to consume the data to prevent hanging
     })
 
     exiftoolProcess.stderr.on('data', (chunk) => {

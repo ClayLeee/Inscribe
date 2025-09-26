@@ -9,6 +9,7 @@ This project is licensed under the GNU General Public License v3.0 (GPL-3.0). Se
 ## Dependencies
 
 This application uses ExifTool for image metadata processing, which is licensed under GPL v3.0.
+
 - ExifTool source: https://github.com/exiftool/exiftool
 - ExifTool license: GPL v3.0
 
@@ -36,6 +37,7 @@ This application requires ExifTool for image metadata processing. Follow these s
 4. Rename the ExifTool executable to `exiftool.exe` and place it in `resources/exiftool_dist/`
 
 The final directory structure should look like:
+
 ```
 resources/
 └── exiftool_dist/

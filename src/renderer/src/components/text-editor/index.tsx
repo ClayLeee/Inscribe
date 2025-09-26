@@ -28,7 +28,6 @@ interface TextEditorProps {
 const decodeUserComment = (userComment: unknown): string => {
   if (!userComment) return ''
 
-
   // Handle different userComment formats
   let bytesArray: number[] = []
 
@@ -41,7 +40,7 @@ const decodeUserComment = (userComment: unknown): string => {
   } else if (typeof userComment === 'object' && userComment !== null) {
     // If it's an object, we need to be careful about key ordering
     const keys = Object.keys(userComment).sort((a, b) => parseInt(a) - parseInt(b))
-    bytesArray = keys.map(key => (userComment as any)[key] as number)
+    bytesArray = keys.map((key) => (userComment as Record<string, number>)[key] as number)
   } else {
     console.warn('Unknown userComment format:', userComment)
     return ''
@@ -71,7 +70,6 @@ const decodeUserComment = (userComment: unknown): string => {
       encoding = 'utf-8'
     }
   }
-
 
   try {
     // Convert number array to Uint8Array for TextDecoder
@@ -146,7 +144,9 @@ const TextEditor: React.FC<TextEditorProps> = ({ selectedImagePath }) => {
       // After successful save, update displayedText and re-fetch to confirm
       const updatedMetadata = await window.api.readImageMetadata(selectedImagePath)
       setDisplayedText(
-        decodeUserComment(updatedMetadata?.userComment) || (updatedMetadata?.Description as string) || ''
+        decodeUserComment(updatedMetadata?.userComment) ||
+          (updatedMetadata?.Description as string) ||
+          ''
       ) // Confirm with re-fetch
     } catch (err) {
       console.error('Failed to write image metadata:', err)
@@ -176,9 +176,7 @@ const TextEditor: React.FC<TextEditorProps> = ({ selectedImagePath }) => {
           title={isEditMode ? 'Switch to View Mode' : 'Switch to Edit Mode'}
         >
           {isEditMode ? <Eye size={16} /> : <Edit3 size={16} />}
-          <span className="text-sm font-medium">
-            {isEditMode ? 'View' : 'Edit'}
-          </span>
+          <span className="text-sm font-medium">{isEditMode ? 'View' : 'Edit'}</span>
         </button>
       </div>
 
@@ -235,14 +233,18 @@ const TextEditor: React.FC<TextEditorProps> = ({ selectedImagePath }) => {
         </div>
       )}
       {saveStatus && (
-        <div className={`mt-4 p-3 rounded-xl ${
-          saveStatus.includes('successfully')
-            ? 'bg-green-50 border border-green-200'
-            : 'bg-red-50 border border-red-200'
-        }`}>
-          <p className={`text-sm font-medium ${
-            saveStatus.includes('successfully') ? 'text-green-600' : 'text-red-600'
-          }`}>
+        <div
+          className={`mt-4 p-3 rounded-xl ${
+            saveStatus.includes('successfully')
+              ? 'bg-green-50 border border-green-200'
+              : 'bg-red-50 border border-red-200'
+          }`}
+        >
+          <p
+            className={`text-sm font-medium ${
+              saveStatus.includes('successfully') ? 'text-green-600' : 'text-red-600'
+            }`}
+          >
             {saveStatus}
           </p>
         </div>

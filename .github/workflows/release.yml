@@ -2,8 +2,8 @@ name: Build and Release
 
 on:
   push:
-    tags: ['v*']  # 只有當推送 tag 時才觸發
-  workflow_dispatch:  # 手動觸發選項
+    tags: ['v*'] # 只有當推送 tag 時才觸發
+  workflow_dispatch: # 手動觸發選項
 
 jobs:
   build:
@@ -13,60 +13,60 @@ jobs:
         os: [windows-latest, macos-latest, ubuntu-latest]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v4
-      with:
-        version: latest
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-        cache: 'pnpm'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
 
-    - name: Install dependencies
-      run: pnpm install --frozen-lockfile
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-    - name: Download ExifTool
-      run: |
-        if [ "${{ matrix.os }}" == "windows-latest" ]; then
-          curl -L https://exiftool.org/exiftool-12.70.zip -o exiftool.zip
-          unzip exiftool.zip -d resources/exiftool_dist/
-        elif [ "${{ matrix.os }}" == "macos-latest" ]; then
-          curl -L https://exiftool.org/Image-ExifTool-12.70.tar.gz -o exiftool.tar.gz
-          tar -xzf exiftool.tar.gz -C resources/exiftool_dist/
-          mv resources/exiftool_dist/Image-ExifTool-12.70/* resources/exiftool_dist/
-        else
-          curl -L https://exiftool.org/Image-ExifTool-12.70.tar.gz -o exiftool.tar.gz
-          tar -xzf exiftool.tar.gz -C resources/exiftool_dist/
-          mv resources/exiftool_dist/Image-ExifTool-12.70/* resources/exiftool_dist/
-        fi
+      - name: Download ExifTool
+        run: |
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            curl -L https://exiftool.org/exiftool-12.70.zip -o exiftool.zip
+            unzip exiftool.zip -d resources/exiftool_dist/
+          elif [ "${{ matrix.os }}" == "macos-latest" ]; then
+            curl -L https://exiftool.org/Image-ExifTool-12.70.tar.gz -o exiftool.tar.gz
+            tar -xzf exiftool.tar.gz -C resources/exiftool_dist/
+            mv resources/exiftool_dist/Image-ExifTool-12.70/* resources/exiftool_dist/
+          else
+            curl -L https://exiftool.org/Image-ExifTool-12.70.tar.gz -o exiftool.tar.gz
+            tar -xzf exiftool.tar.gz -C resources/exiftool_dist/
+            mv resources/exiftool_dist/Image-ExifTool-12.70/* resources/exiftool_dist/
+          fi
 
-    - name: Build app
-      run: pnpm build
+      - name: Build app
+        run: pnpm build
 
-    - name: Build executable
-      run: |
-        if [ "${{ matrix.os }}" == "windows-latest" ]; then
-          pnpm build:win
-        elif [ "${{ matrix.os }}" == "macos-latest" ]; then
-          pnpm build:mac
-        else
-          pnpm build:linux
-        fi
+      - name: Build executable
+        run: |
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            pnpm build:win
+          elif [ "${{ matrix.os }}" == "macos-latest" ]; then
+            pnpm build:mac
+          else
+            pnpm build:linux
+          fi
 
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: Inscribe-${{ matrix.os }}
-        path: |
-          dist/
-          !dist/builder-debug.yml
-          !dist/builder-effective-config.yaml
-        retention-days: 30
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Inscribe-${{ matrix.os }}
+          path: |
+            dist/
+            !dist/builder-debug.yml
+            !dist/builder-effective-config.yaml
+          retention-days: 30
 
   release:
     needs: build
@@ -74,23 +74,23 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: artifacts/
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
 
-    - name: Create Release
-      uses: softprops/action-gh-release@v2
-      with:
-        files: |
-          artifacts/Inscribe-windows-latest/*
-          artifacts/Inscribe-macos-latest/*
-          artifacts/Inscribe-ubuntu-latest/*
-        generate_release_notes: true
-        draft: false
-        prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/Inscribe-windows-latest/*
+            artifacts/Inscribe-macos-latest/*
+            artifacts/Inscribe-ubuntu-latest/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

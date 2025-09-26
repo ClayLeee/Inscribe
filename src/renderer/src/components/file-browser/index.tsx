@@ -97,7 +97,8 @@ const FileBrowser: React.FC<FileBrowserProps> = ({ onFileSelect }) => {
     }
 
     const parentPath = currentPath.substring(0, currentPath.lastIndexOf('\\'))
-    if (parentPath && parentPath.length > 3) { // More than just "C:\"
+    if (parentPath && parentPath.length > 3) {
+      // More than just "C:\"
       setCurrentPath(parentPath)
     } else {
       // If at root of a drive, go back to drives list
@@ -156,7 +157,10 @@ const FileBrowser: React.FC<FileBrowserProps> = ({ onFileSelect }) => {
                   <span className="text-white text-sm">💾</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <span className="font-medium text-gray-700 block truncate group-hover:text-gray-900 transition-colors" title={drive.name}>
+                  <span
+                    className="font-medium text-gray-700 block truncate group-hover:text-gray-900 transition-colors"
+                    title={drive.name}
+                  >
                     {drive.name}
                   </span>
                   <span className="text-xs text-gray-500">Drive</span>
@@ -180,22 +184,23 @@ const FileBrowser: React.FC<FileBrowserProps> = ({ onFileSelect }) => {
                 className="flex items-center p-3 hover:bg-white/80 cursor-pointer rounded-lg transition-all duration-200 hover:shadow-sm border border-transparent hover:border-gray-200/50 group"
                 onClick={() => handleEntryClick(entry)}
               >
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 flex-shrink-0 ${
-                  entry.isDirectory
-                    ? 'bg-gradient-to-br from-amber-500 to-orange-600'
-                    : 'bg-gradient-to-br from-green-500 to-emerald-600'
-                }`}>
-                  <span className="text-white text-sm">
-                    {entry.isDirectory ? '📁' : '📄'}
-                  </span>
+                <div
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 flex-shrink-0 ${
+                    entry.isDirectory
+                      ? 'bg-gradient-to-br from-amber-500 to-orange-600'
+                      : 'bg-gradient-to-br from-green-500 to-emerald-600'
+                  }`}
+                >
+                  <span className="text-white text-sm">{entry.isDirectory ? '📁' : '📄'}</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <span className="font-medium text-gray-700 block truncate group-hover:text-gray-900 transition-colors" title={entry.name}>
+                  <span
+                    className="font-medium text-gray-700 block truncate group-hover:text-gray-900 transition-colors"
+                    title={entry.name}
+                  >
                     {entry.name}
                   </span>
-                  {entry.isDirectory && (
-                    <span className="text-xs text-gray-500">Folder</span>
-                  )}
+                  {entry.isDirectory && <span className="text-xs text-gray-500">Folder</span>}
                 </div>
               </div>
             ))}
