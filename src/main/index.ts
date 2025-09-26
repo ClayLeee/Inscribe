@@ -20,7 +20,7 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join, extname } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import icon from '../../resources/icon.png?asset'
+import icon from '@/icon.png?asset'
 import { promises as fs } from 'fs'
 import { readImageMetadata, writeImageMetadata } from './lib/exif-utils'
 
@@ -104,6 +104,30 @@ app.whenReady().then(() => {
       return filteredFiles
     } catch (error) {
       console.error('Error listing files:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('get-drives', async () => {
+    try {
+      if (process.platform !== 'win32') {
+        return []
+      }
+
+      // Get available drives on Windows
+      const drives: string[] = []
+      for (let i = 65; i <= 90; i++) {
+        const drive = String.fromCharCode(i) + ':'
+        try {
+          await fs.access(drive)
+          drives.push(drive + '\\')
+        } catch {
+          // Drive doesn't exist, skip
+        }
+      }
+      return drives
+    } catch (error) {
+      console.error('Error getting drives:', error)
       throw error
     }
   })

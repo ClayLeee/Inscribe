@@ -7,6 +7,7 @@ export interface IpcApi {
     filePath: string,
     data: { UserComment?: string }
   ) => Promise<{ status: string; message: string }>
+  getDrives: () => Promise<string[]>
 }
 
 declare global {

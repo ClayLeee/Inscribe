@@ -25,7 +25,8 @@ const api = {
   readImageMetadata: (filePath: string) => ipcRenderer.invoke('read-image-metadata', filePath),
   writeImageMetadata: (filePath: string, data: object) =>
     ipcRenderer.invoke('write-image-metadata', filePath, data),
-  listFiles: (directoryPath: string) => ipcRenderer.invoke('list-files', directoryPath)
+  listFiles: (directoryPath: string) => ipcRenderer.invoke('list-files', directoryPath),
+  getDrives: () => ipcRenderer.invoke('get-drives')
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

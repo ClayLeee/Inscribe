@@ -33,7 +33,6 @@ function getExifToolPath(): string {
     // In development, it's in the project root's resources/exiftool_dist folder
     exifToolPath = path.join(__dirname, '..', '..', 'resources', 'exiftool_dist', 'exiftool.exe')
   }
-  console.log('Using ExifTool path:', exifToolPath)
   return exifToolPath
 }
 
@@ -89,8 +88,6 @@ export async function writeImageMetadata(
 
     exiftoolProcess.on('close', (code) => {
       if (code === 0) {
-        console.log(`Successfully wrote metadata to ${filePath}`)
-        console.log('ExifTool stdout:', stdout)
         resolve({ status: 'success', message: 'Metadata written successfully.' })
       } else {
         const errorMessage = `ExifTool failed with code ${code}. Stderr: ${stderr}`

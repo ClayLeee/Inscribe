@@ -2,6 +2,7 @@ appId: com.inscribe.app
 productName: Inscribe
 directories:
   buildResources: build
+icon: resources/icon.png
 files:
   - '!**/.vscode/*'
   - '!src/*'

@@ -18,6 +18,7 @@
  */
 
 import { useState, useEffect } from 'react'
+import { Eye, Edit3 } from 'lucide-react'
 
 interface TextEditorProps {
   selectedImagePath: string | null
@@ -27,9 +28,26 @@ interface TextEditorProps {
 const decodeUserComment = (userComment: unknown): string => {
   if (!userComment) return ''
 
-  // exifr returns userComment as an object with byte values.
-  // The first 8 bytes are typically the encoding (e.g., ASCII\0\0\0 or UNICODE\0).
-  const bytesArray = Object.values(userComment) as number[]
+
+  // Handle different userComment formats
+  let bytesArray: number[] = []
+
+  if (typeof userComment === 'string') {
+    // If it's already a string, return it directly
+    return userComment.trim()
+  } else if (Array.isArray(userComment)) {
+    // If it's an array, use it directly
+    bytesArray = userComment
+  } else if (typeof userComment === 'object' && userComment !== null) {
+    // If it's an object, we need to be careful about key ordering
+    const keys = Object.keys(userComment).sort((a, b) => parseInt(a) - parseInt(b))
+    bytesArray = keys.map(key => (userComment as any)[key] as number)
+  } else {
+    console.warn('Unknown userComment format:', userComment)
+    return ''
+  }
+
+  if (bytesArray.length === 0) return ''
 
   let textBytes: number[] = bytesArray
   let encoding: string = 'utf-8' // Default to UTF-8
@@ -54,15 +72,18 @@ const decodeUserComment = (userComment: unknown): string => {
     }
   }
 
+
   try {
     // Convert number array to Uint8Array for TextDecoder
     const uint8Array = new Uint8Array(textBytes)
-    return new TextDecoder(encoding).decode(uint8Array).trim()
+    const result = new TextDecoder(encoding).decode(uint8Array).trim()
+    return result
   } catch (e) {
     console.warn(`Could not decode userComment bytes with ${encoding} TextDecoder:`, bytesArray, e)
     // Fallback to a simpler decoding if the specific one fails
     try {
-      return new TextDecoder('utf-8').decode(new Uint8Array(bytesArray)).trim()
+      const result = new TextDecoder('utf-8').decode(new Uint8Array(bytesArray)).trim()
+      return result
     } catch (e2) {
       console.warn('Fallback UTF-8 decoding also failed:', e2)
       return ''
@@ -77,6 +98,7 @@ const TextEditor: React.FC<TextEditorProps> = ({ selectedImagePath }) => {
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
   const [saveStatus, setSaveStatus] = useState<string | null>(null)
+  const [isEditMode, setIsEditMode] = useState<boolean>(false) // Toggle between read-only and edit mode
 
   useEffect(() => {
     const fetchMetadata = async (): Promise<void> => {
@@ -91,8 +113,10 @@ const TextEditor: React.FC<TextEditorProps> = ({ selectedImagePath }) => {
       setSaveStatus(null)
       try {
         const metadata = await window.api.readImageMetadata(selectedImagePath)
-        const textFromImage =
-          decodeUserComment(metadata?.userComment) || (metadata?.Description as string) || ''
+
+        // Only read from userComment field (which is what we write to)
+        const textFromImage = decodeUserComment(metadata?.userComment) || ''
+
         setDisplayedText(textFromImage)
         setEditableText(textFromImage)
       } catch (err) {
@@ -135,33 +159,93 @@ const TextEditor: React.FC<TextEditorProps> = ({ selectedImagePath }) => {
 
   return (
     <div className="flex flex-col h-full">
-      <h3 className="text-md font-semibold mb-2">Current Image Text (Read-Only)</h3>
-      <div className="w-full p-2 border rounded bg-gray-50 mb-4 min-h-[80px] overflow-auto">
-        {displayedText || 'No text found in image.'}
+      {/* Header with Toggle */}
+      <div className="flex items-center justify-between mb-6 bg-gray-50/50 rounded-xl p-4 border border-gray-200/50">
+        <div className="flex-1">
+          <h3 className="text-lg font-semibold text-gray-800 mb-1">
+            {isEditMode ? 'Edit Image Text' : 'Current Image Text'}
+          </h3>
+          <p className="text-sm text-gray-500">
+            {isEditMode ? 'Modify the text content' : 'View current text content'}
+          </p>
+        </div>
+        <button
+          onClick={() => setIsEditMode(!isEditMode)}
+          className="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg transition-all duration-200 flex items-center gap-2 cursor-pointer shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={loading || !selectedImagePath}
+          title={isEditMode ? 'Switch to View Mode' : 'Switch to Edit Mode'}
+        >
+          {isEditMode ? <Eye size={16} /> : <Edit3 size={16} />}
+          <span className="text-sm font-medium">
+            {isEditMode ? 'View' : 'Edit'}
+          </span>
+        </button>
       </div>
 
-      <h3 className="text-md font-semibold mb-2">Edit Image Text</h3>
-      <textarea
-        className="flex-1 w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
-        value={editableText}
-        onChange={(e) => setEditableText(e.target.value)}
-        placeholder="Enter text to store in the image..."
-        disabled={loading || !selectedImagePath}
-      />
-      <button
-        onClick={handleSave}
-        className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-blue-400"
-        disabled={loading || !selectedImagePath}
-      >
-        {loading ? 'Saving...' : 'Save Text to Image'}
-      </button>
-      {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+      {/* Content Area */}
+      <div className="flex-1 flex flex-col bg-white/50 rounded-xl border border-gray-200/50 p-4">
+        {isEditMode ? (
+          // Edit Mode
+          <div className="flex flex-col h-full">
+            <div className="flex-1 mb-4">
+              <textarea
+                className="w-full h-full p-4 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white/80 transition-all duration-200"
+                value={editableText}
+                onChange={(e) => setEditableText(e.target.value)}
+                placeholder="Enter text to store in the image..."
+                disabled={loading || !selectedImagePath}
+              />
+            </div>
+            <button
+              onClick={handleSave}
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-500 cursor-pointer transition-all duration-200 shadow-lg hover:shadow-xl disabled:shadow-none font-medium"
+              disabled={loading || !selectedImagePath}
+            >
+              {loading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Saving...</span>
+                </div>
+              ) : (
+                'Save Text to Image'
+              )}
+            </button>
+          </div>
+        ) : (
+          // Read-Only Mode
+          <div className="flex-1 w-full bg-white/80 rounded-xl border border-gray-200 p-4 overflow-auto">
+            <pre className="whitespace-pre-wrap font-sans text-sm text-gray-700 leading-relaxed">
+              {displayedText || (
+                <div className="text-center py-8 text-gray-400">
+                  <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                    <span className="text-xl">📝</span>
+                  </div>
+                  <p className="font-medium">No text found in image</p>
+                </div>
+              )}
+            </pre>
+          </div>
+        )}
+      </div>
+
+      {/* Status Messages */}
+      {error && (
+        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+          <p className="text-red-600 text-sm font-medium">{error}</p>
+        </div>
+      )}
       {saveStatus && (
-        <p
-          className={`text-sm mt-2 ${saveStatus.includes('successfully') ? 'text-green-600' : 'text-red-500'}`}
-        >
-          {saveStatus}
-        </p>
+        <div className={`mt-4 p-3 rounded-xl ${
+          saveStatus.includes('successfully')
+            ? 'bg-green-50 border border-green-200'
+            : 'bg-red-50 border border-red-200'
+        }`}>
+          <p className={`text-sm font-medium ${
+            saveStatus.includes('successfully') ? 'text-green-600' : 'text-red-600'
+          }`}>
+            {saveStatus}
+          </p>
+        </div>
       )}
     </div>
   )

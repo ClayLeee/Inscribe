@@ -26,6 +26,28 @@ $ pnpm install
 
 ### Development
 
+#### ExifTool Setup
+
+This application requires ExifTool for image metadata processing. Follow these steps to set it up:
+
+1. Download ExifTool from [https://exiftool.org/](https://exiftool.org/)
+2. Extract the downloaded archive
+3. Copy the `exiftool_files` folder to `resources/exiftool_dist/`
+4. Rename the ExifTool executable to `exiftool.exe` and place it in `resources/exiftool_dist/`
+
+The final directory structure should look like:
+```
+resources/
+└── exiftool_dist/
+    ├── exiftool.exe          # Renamed executable
+    └── exiftool_files/       # All ExifTool library files
+        ├── exiftool.pl
+        ├── lib/
+        └── ...
+```
+
+#### Start Development
+
 ```bash
 $ pnpm dev
 ```

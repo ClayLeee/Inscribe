@@ -5,7 +5,12 @@ import tailwindcss from '@tailwindcss/vite' // Import the new Vite plugin
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()]
+    plugins: [externalizeDepsPlugin()],
+    resolve: {
+      alias: {
+        '@': resolve('resources')
+      }
+    }
   },
   preload: {
     plugins: [externalizeDepsPlugin()]
@@ -13,7 +18,8 @@ export default defineConfig({
   renderer: {
     resolve: {
       alias: {
-        '@renderer': resolve('src/renderer/src')
+        '@renderer': resolve('src/renderer/src'),
+        '@': resolve('resources')
       }
     },
     plugins: [react(), tailwindcss()] // Add the new Vite plugin here
