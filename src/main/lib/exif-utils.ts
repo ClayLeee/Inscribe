@@ -67,6 +67,10 @@ export async function writeImageMetadata(
       '-overwrite_original',
       '-charset',
       'UTF8',
+      '-charset',
+      'iptc=UTF8',
+      '-charset',
+      'exif=UTF8',
       filePath, // Image file path comes before stdin arguments
       '-UserComment<=-' // Read UserComment value from stdin
     ]
@@ -100,9 +104,11 @@ export async function writeImageMetadata(
       reject(new Error(`Failed to spawn ExifTool process: ${err.message}`))
     })
 
-    // Write the UserComment to stdin
+    // Write the UserComment to stdin with proper UTF-8 encoding
     if (data.UserComment !== undefined) {
-      exiftoolProcess.stdin.write(data.UserComment)
+      // Ensure the text is properly encoded as UTF-8
+      const buffer = Buffer.from(data.UserComment, 'utf8')
+      exiftoolProcess.stdin.write(buffer)
     }
     exiftoolProcess.stdin.end() // Close stdin to signal end of input
   })
