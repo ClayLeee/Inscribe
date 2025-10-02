@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          lfs: false
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -27,6 +29,14 @@ jobs:
         with:
           node-version: '22'
           cache: 'pnpm'
+
+      - name: Fix line endings (Windows only)
+        if: matrix.os == 'windows-latest'
+        run: |
+          git config core.autocrlf false
+          git config core.eol lf
+          git add .
+          git reset --hard
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
