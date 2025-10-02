@@ -29,14 +29,6 @@ jobs:
           node-version: '22'
           cache: 'pnpm'
 
-      - name: Fix line endings (Windows only)
-        if: matrix.os == 'windows-latest'
-        run: |
-          git config core.autocrlf false
-          git config core.eol lf
-          git add .
-          git reset --hard
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
