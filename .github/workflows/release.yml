@@ -33,16 +33,16 @@ jobs:
       - name: Download ExifTool
         run: |
           if [ "${{ matrix.os }}" == "windows-latest" ]; then
-            curl -L https://exiftool.org/exiftool-12.70.zip -o exiftool.zip
+            curl -L https://exiftool.org/exiftool-13.37.zip -o exiftool.zip
             unzip exiftool.zip -d resources/exiftool_dist/
           elif [ "${{ matrix.os }}" == "macos-latest" ]; then
-            curl -L https://exiftool.org/Image-ExifTool-12.70.tar.gz -o exiftool.tar.gz
+            curl -L https://exiftool.org/Image-ExifTool-13.37.tar.gz -o exiftool.tar.gz
             tar -xzf exiftool.tar.gz -C resources/exiftool_dist/
-            mv resources/exiftool_dist/Image-ExifTool-12.70/* resources/exiftool_dist/
+            mv resources/exiftool_dist/Image-ExifTool-13.37/* resources/exiftool_dist/
           else
-            curl -L https://exiftool.org/Image-ExifTool-12.70.tar.gz -o exiftool.tar.gz
+            curl -L https://exiftool.org/Image-ExifTool-13.37.tar.gz -o exiftool.tar.gz
             tar -xzf exiftool.tar.gz -C resources/exiftool_dist/
-            mv resources/exiftool_dist/Image-ExifTool-12.70/* resources/exiftool_dist/
+            mv resources/exiftool_dist/Image-ExifTool-13.37/* resources/exiftool_dist/
           fi
 
       - name: Build app
@@ -57,6 +57,19 @@ jobs:
           else
             pnpm build:linux
           fi
+
+      - name: Verify build artifacts
+        run: |
+          echo "Checking build artifacts..."
+          ls -la dist/
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            test -f dist/*.exe || (echo "Windows executable not found" && exit 1)
+          elif [ "${{ matrix.os }}" == "macos-latest" ]; then
+            test -f dist/*.dmg || (echo "macOS DMG not found" && exit 1)
+          else
+            test -f dist/*.AppImage || (echo "Linux AppImage not found" && exit 1)
+          fi
+          echo "Build artifacts verified successfully"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -92,5 +105,22 @@ jobs:
           generate_release_notes: true
           draft: false
           prerelease: false
+          body: |
+            ## 🚀 Inscribe ${{ github.ref_name }}
+
+            ### 📦 Downloads
+            - **Windows**: `Inscribe-*-setup.exe` - Windows 安裝程式
+            - **macOS**: `Inscribe-*.dmg` - macOS 磁碟映像
+            - **Linux**: `Inscribe-*.AppImage` - Linux 可執行檔案
+
+            ### ✨ Features
+            - 圖片元數據編輯
+            - 多平台支援
+            - 中文編碼支援
+
+            ### 🔧 Installation
+            1. 下載對應平台的安裝檔
+            2. 執行安裝程式
+            3. 開始使用！
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
