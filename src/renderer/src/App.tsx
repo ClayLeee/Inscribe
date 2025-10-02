@@ -66,11 +66,6 @@ function App(): React.JSX.Element {
 
       {/* Right Panel: Text Editor */}
       <aside className="min-w-[300px] w-[300px] bg-white/80 backdrop-blur-sm p-6 border-l border-gray-200/60 flex flex-col shadow-lg">
-        <div className="flex items-center mb-6">
-          <h2 className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-            Text Editor
-          </h2>
-        </div>
         <div className="flex-1">
           <TextEditor selectedImagePath={selectedImagePath} />
         </div>

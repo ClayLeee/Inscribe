@@ -24,68 +24,16 @@ interface TextEditorProps {
   selectedImagePath: string | null
 }
 
-// Helper function to decode exifr's userComment output
+// Helper function to process ExifTool userComment output
 const decodeUserComment = (userComment: unknown): string => {
   if (!userComment) return ''
 
-  // Handle different userComment formats
-  let bytesArray: number[] = []
-
   if (typeof userComment === 'string') {
-    // If it's already a string, return it directly
+    // ExifTool returns UTF-8 encoded string directly
     return userComment.trim()
-  } else if (Array.isArray(userComment)) {
-    // If it's an array, use it directly
-    bytesArray = userComment
-  } else if (typeof userComment === 'object' && userComment !== null) {
-    // If it's an object, we need to be careful about key ordering
-    const keys = Object.keys(userComment).sort((a, b) => parseInt(a) - parseInt(b))
-    bytesArray = keys.map((key) => (userComment as Record<string, number>)[key] as number)
   } else {
-    console.warn('Unknown userComment format:', userComment)
+    console.warn('Unexpected userComment format from ExifTool:', userComment)
     return ''
-  }
-
-  if (bytesArray.length === 0) return ''
-
-  let textBytes: number[] = bytesArray
-  let encoding: string = 'utf-8' // Default to UTF-8
-
-  if (bytesArray.length >= 8) {
-    const headerBytes = bytesArray.slice(0, 8)
-    const header = String.fromCharCode(...headerBytes).replace(/\0/g, '') // Remove null terminators
-
-    if (header.startsWith('ASCII')) {
-      textBytes = bytesArray.slice(8)
-      encoding = 'ascii'
-    } else if (header.startsWith('UNICODE')) {
-      textBytes = bytesArray.slice(8)
-      encoding = 'utf-16le' // Common for UNICODE in EXIF
-    } else if (header.startsWith('JIS')) {
-      textBytes = bytesArray.slice(8)
-      encoding = 'shift-jis' // Or other JIS variant
-    } else {
-      // If no recognized header, assume the whole thing is the text, default to UTF-8
-      textBytes = bytesArray
-      encoding = 'utf-8'
-    }
-  }
-
-  try {
-    // Convert number array to Uint8Array for TextDecoder
-    const uint8Array = new Uint8Array(textBytes)
-    const result = new TextDecoder(encoding).decode(uint8Array).trim()
-    return result
-  } catch (e) {
-    console.warn(`Could not decode userComment bytes with ${encoding} TextDecoder:`, bytesArray, e)
-    // Fallback to a simpler decoding if the specific one fails
-    try {
-      const result = new TextDecoder('utf-8').decode(new Uint8Array(bytesArray)).trim()
-      return result
-    } catch (e2) {
-      console.warn('Fallback UTF-8 decoding also failed:', e2)
-      return ''
-    }
   }
 }
 
@@ -161,7 +109,7 @@ const TextEditor: React.FC<TextEditorProps> = ({ selectedImagePath }) => {
     <div className="flex flex-col h-full">
       {/* Header with Toggle */}
       <div className="flex items-center justify-between mb-6 bg-gray-50/50 rounded-xl p-4 border border-gray-200/50">
-        <div className="flex-1">
+        <div className="flex-1 mr-2">
           <h3 className="text-lg font-semibold text-gray-800 mb-1">
             {isEditMode ? 'Edit Image Text' : 'Current Image Text'}
           </h3>
@@ -205,7 +153,7 @@ const TextEditor: React.FC<TextEditorProps> = ({ selectedImagePath }) => {
                   <span>Saving...</span>
                 </div>
               ) : (
-                'Save Text to Image'
+                <div>Save</div>
               )}
             </button>
           </div>

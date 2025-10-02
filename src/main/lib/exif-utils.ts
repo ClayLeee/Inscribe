@@ -18,8 +18,6 @@
  */
 
 import { spawn } from 'child_process'
-import { promises as fs } from 'fs'
-import exifr from 'exifr'
 import { app } from 'electron' // Import app from electron
 import path from 'path' // Import path module
 
@@ -36,26 +34,84 @@ function getExifToolPath(): string {
   return exifToolPath
 }
 
-// exifr is primarily a reader library. It does not support writing metadata.
-// If writing is a hard requirement, a different approach will be needed.
-
+// Read image metadata using ExifTool
 export async function readImageMetadata(filePath: string): Promise<Record<string, unknown>> {
-  try {
-    const fileBuffer = await fs.readFile(filePath)
-    // You can specify which tags to parse, e.g., { exif: true, iptc: true, xmp: true, userComment: true }
-    // For simplicity, let's parse all available for now.
-    const output = await exifr.parse(fileBuffer, {
-      exif: true,
-      iptc: true,
-      xmp: true,
-      userComment: true
-      // Add other tags you might be interested in
+  return new Promise((resolve, reject) => {
+    const exiftoolArgs: string[] = [
+      '-charset',
+      'UTF8',
+      '-charset',
+      'iptc=UTF8',
+      '-charset',
+      'exif=UTF8',
+      '-json',
+      '-UserComment',
+      '-Description',
+      '-EXIF:UserComment',
+      '-IPTC:Caption-Abstract',
+      filePath
+    ]
+
+    const exiftoolExecutablePath = getExifToolPath()
+
+    const exiftoolProcess = spawn(exiftoolExecutablePath, exiftoolArgs)
+
+    let stdout = ''
+    let stderr = ''
+
+    exiftoolProcess.stdout.on('data', (chunk) => {
+      stdout += chunk.toString()
     })
-    return output
-  } catch (error) {
-    console.error('Error reading metadata with exifr:', error)
-    throw error
-  }
+
+    exiftoolProcess.stderr.on('data', (chunk) => {
+      stderr += chunk.toString()
+    })
+
+    exiftoolProcess.on('close', (code) => {
+      if (code === 0) {
+        try {
+          // Parse JSON output from ExifTool
+          const metadataArray = JSON.parse(stdout)
+          if (Array.isArray(metadataArray) && metadataArray.length > 0) {
+            const metadata = metadataArray[0]
+
+            // Convert ExifTool output to a format compatible with the existing code
+            const result: Record<string, unknown> = {}
+
+            // Map ExifTool fields to our expected format
+            if (metadata.UserComment) {
+              result.userComment = metadata.UserComment
+            }
+            if (metadata.Description) {
+              result.description = metadata.Description
+            }
+            if (metadata['EXIF:UserComment']) {
+              result.userComment = metadata['EXIF:UserComment']
+            }
+            if (metadata['IPTC:Caption-Abstract']) {
+              result.description = metadata['IPTC:Caption-Abstract']
+            }
+
+            resolve(result)
+          } else {
+            resolve({})
+          }
+        } catch (parseError) {
+          console.error('Error parsing ExifTool JSON output:', parseError)
+          reject(new Error(`Failed to parse ExifTool output: ${parseError}`))
+        }
+      } else {
+        const errorMessage = `ExifTool failed with code ${code}. Stderr: ${stderr}`
+        console.error(`Failed to read metadata from ${filePath}:`, errorMessage)
+        reject(new Error(errorMessage))
+      }
+    })
+
+    exiftoolProcess.on('error', (err) => {
+      console.error(`Failed to spawn ExifTool process for ${filePath}:`, err)
+      reject(new Error(`Failed to spawn ExifTool process: ${err.message}`))
+    })
+  })
 }
 
 export async function writeImageMetadata(

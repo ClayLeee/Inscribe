@@ -20,10 +20,12 @@
 /* eslint-disable react/prop-types */
 
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react'
+import { Ban } from 'lucide-react'
 
 interface FileEntry {
   name: string
   isDirectory: boolean
+  hasPermission?: boolean
 }
 
 interface DriveEntry {
@@ -95,17 +97,39 @@ const FileListItem: React.FC<{
   onEntryClick: (entry: FileEntry) => void
 }> = memo(({ entry, fullPath, isImage, onEntryClick }) => {
   const handleClick = useCallback(() => {
+    // Don't allow clicking on directories without permission
+    if (entry.isDirectory && entry.hasPermission === false) {
+      return
+    }
     onEntryClick(entry)
   }, [entry, onEntryClick])
 
+  const hasPermission = entry.hasPermission !== false
+  const isRestricted = entry.isDirectory && !hasPermission
+
   return (
     <div
-      className="flex items-center p-3 hover:bg-white/80 cursor-pointer rounded-lg transition-all duration-200 hover:shadow-sm border border-transparent hover:border-gray-200/50 group"
+      className={`flex items-center p-3 rounded-lg transition-all duration-200 border border-transparent group ${
+        isRestricted
+          ? 'opacity-60 cursor-not-allowed'
+          : 'hover:bg-white/80 cursor-pointer hover:shadow-sm hover:border-gray-200/50'
+      }`}
       onClick={handleClick}
+      title={isRestricted ? '沒有權限進入此資料夾' : entry.name}
     >
       {entry.isDirectory ? (
-        <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
-          <span className="text-white text-sm">📁</span>
+        <div
+          className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 flex-shrink-0 ${
+            isRestricted
+              ? 'bg-gradient-to-br from-red-400 to-red-500'
+              : 'bg-gradient-to-br from-amber-500 to-orange-600'
+          }`}
+        >
+          {isRestricted ? (
+            <Ban size={16} className="text-white" />
+          ) : (
+            <span className="text-white text-sm">📁</span>
+          )}
         </div>
       ) : isImage ? (
         <ImageThumbnail filePath={fullPath} filename={entry.name} />
@@ -116,13 +140,21 @@ const FileListItem: React.FC<{
       )}
       <div className="flex-1 min-w-0">
         <span
-          className="font-medium text-gray-700 block truncate group-hover:text-gray-900 transition-colors"
+          className={`font-medium block truncate transition-colors ${
+            isRestricted ? 'text-gray-500' : 'text-gray-700 group-hover:text-gray-900'
+          }`}
           title={entry.name}
         >
           {entry.name}
         </span>
-        {entry.isDirectory && <span className="text-xs text-gray-500">Folder</span>}
-        {isImage && <span className="text-xs text-gray-500">Image</span>}
+        <div className="flex items-center gap-2">
+          {entry.isDirectory && (
+            <span className={`text-xs ${isRestricted ? 'text-red-500' : 'text-gray-500'}`}>
+              {isRestricted ? '無權限存取' : 'Folder'}
+            </span>
+          )}
+          {isImage && <span className="text-xs text-gray-500">Image</span>}
+        </div>
       </div>
     </div>
   )
@@ -246,7 +278,29 @@ const FileBrowser: React.FC<FileBrowserProps> = ({ onFileSelect }) => {
       try {
         setError(null)
         const fetchedFiles = await window.api.listFiles(currentPath)
-        setFiles(fetchedFiles)
+
+        // Add permission checking for directories
+        const filesWithPermissions = await Promise.all(
+          fetchedFiles.map(async (file) => {
+            if (file.isDirectory) {
+              try {
+                // Try to access the directory to check permissions
+                const testPath =
+                  currentPath.endsWith('\\') || currentPath.endsWith('/')
+                    ? `${currentPath}${file.name}`
+                    : `${currentPath}\\${file.name}`
+                await window.api.listFiles(testPath)
+                return { ...file, hasPermission: true }
+              } catch {
+                // If we can't access the directory, mark it as no permission
+                return { ...file, hasPermission: false }
+              }
+            }
+            return { ...file, hasPermission: true } // Files don't need permission check
+          })
+        )
+
+        setFiles(filesWithPermissions)
         resetPagination()
       } catch (err) {
         console.error('Failed to list files:', err)
